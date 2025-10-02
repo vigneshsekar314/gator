@@ -41,6 +41,7 @@ func RegisterCommands(cmds *commands) {
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
 }
 
 func Run(state *state, cmds *commands) error {
@@ -121,5 +122,22 @@ func handlerReset(s *state, cmd command) error {
 		return err
 	}
 	fmt.Println("All users have been deleted")
+	return nil
+}
+
+func handlerUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if user.Name == s.config.CurrentUserName {
+			fmt.Printf("* %s (current)\n", user.Name)
+		} else {
+			fmt.Printf("* %s\n", user.Name)
+		}
+	}
+
 	return nil
 }

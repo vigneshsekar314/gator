@@ -13,3 +13,6 @@ SELECT * FROM users WHERE users.name = $1 LIMIT 1;
 
 -- name: DeleteUser :exec
 DELETE FROM users;
+
+-- name: GetUsers :many
+SELECT * FROM users;
