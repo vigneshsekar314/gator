@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/vigneshsekar314/gator/internal/config"
+	"github.com/vigneshsekar314/gator/internal/database"
 	"os"
+	"time"
 )
 
 type state struct {
 	config *config.Config
+	db     *database.Queries
 }
 
 type command struct {
@@ -32,8 +37,9 @@ func GetNewCommands() commands {
 	}
 }
 
-func Register(cmds *commands) {
+func RegisterCommands(cmds *commands) {
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 }
 
 func Run(state *state, cmds *commands) error {
@@ -72,9 +78,39 @@ func handlerLogin(s *state, cmd command) error {
 	if len(cmd.arguments) == 0 {
 		return errors.New("Login command expects username")
 	}
-	if err := s.config.SetUser(cmd.arguments[0]); err != nil {
+	usrNm := cmd.arguments[0]
+	usr, err := s.db.GetUser(context.Background(), usrNm)
+	if err != nil {
 		return err
 	}
-	fmt.Printf("user has been set to %s\n", cmd.arguments[0])
+	if usr.Name != usrNm {
+		return errors.New("User is not found in the database")
+	}
+	if err := s.config.SetUser(usrNm); err != nil {
+		return err
+	}
+	fmt.Printf("user has been set to %s\n", usrNm)
+	return nil
+}
+
+func handlerRegister(s *state, cmd command) error {
+	if len(cmd.arguments) == 0 {
+		return errors.New("Register command exxpects username")
+	}
+	timeNow := time.Now()
+	usrNm := cmd.arguments[0]
+	usr, err := s.db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
+		Name:      usrNm,
+	})
+	if err != nil {
+		return err
+	}
+	if err := s.config.SetUser(usrNm); err != nil {
+		return err
+	}
+	fmt.Printf("User is created. User ID: %v, createdAt: %v, updatedAt: %v, Name: %s\n", usr.ID, usr.CreatedAt, usr.UpdatedAt, usr.Name)
 	return nil
 }
