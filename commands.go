@@ -40,6 +40,7 @@ func GetNewCommands() commands {
 func RegisterCommands(cmds *commands) {
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
 }
 
 func Run(state *state, cmds *commands) error {
@@ -112,5 +113,13 @@ func handlerRegister(s *state, cmd command) error {
 		return err
 	}
 	fmt.Printf("User is created. User ID: %v, createdAt: %v, updatedAt: %v, Name: %s\n", usr.ID, usr.CreatedAt, usr.UpdatedAt, usr.Name)
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	if err := s.db.DeleteUser(context.Background()); err != nil {
+		return err
+	}
+	fmt.Println("All users have been deleted")
 	return nil
 }
