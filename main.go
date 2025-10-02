@@ -10,17 +10,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	state := config.GetNewState(&conf)
-	cmds := config.GetNewCommands()
-	config.Register(&cmds)
-	if err := config.Run(&state, &cmds); err != nil {
+	state := GetNewState(&conf)
+	cmds := GetNewCommands()
+	Register(&cmds)
+	if err := Run(&state, &cmds); err != nil {
 		log.Fatal(err)
 	}
-
-	// conf, err = config.Read()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("DB URL: %s\n", conf.DbUrl)
-	// fmt.Printf("Username: %s\n", conf.CurrentUserName)
 }

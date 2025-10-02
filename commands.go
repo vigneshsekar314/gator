@@ -1,13 +1,14 @@
-package config
+package main
 
 import (
 	"errors"
 	"fmt"
+	"github.com/vigneshsekar314/gator/internal/config"
 	"os"
 )
 
 type state struct {
-	config *Config
+	config *config.Config
 }
 
 type command struct {
@@ -19,7 +20,7 @@ type commands struct {
 	cmdList map[string]func(*state, command) error
 }
 
-func GetNewState(config *Config) state {
+func GetNewState(config *config.Config) state {
 	return state{
 		config: config,
 	}
