@@ -43,6 +43,7 @@ func RegisterCommands(cmds *commands) {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddfeed)
 }
 
 func Run(state *state, cmds *commands) error {
@@ -151,5 +152,41 @@ func handlerAgg(s *state, cmd command) error {
 	// fmt.Println(feed.Channel.Title)
 	// fmt.Println(feed.Channel.Description)
 	fmt.Println(feed)
+	return nil
+}
+
+func handlerAddfeed(s *state, cmd command) error {
+	if len(cmd.arguments) < 2 {
+		return errors.New("Atleast two Arguments should be present for name and url")
+	}
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+	var currentUserId uuid.UUID
+	for _, user := range users {
+		if user.Name == s.config.CurrentUserName {
+			currentUserId = user.ID
+			break
+		}
+	}
+	timeNow := time.Now()
+	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
+		Name:      cmd.arguments[0],
+		Url:       cmd.arguments[1],
+		UserID:    currentUserId,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("id: %s\n", feed.ID)
+	fmt.Printf("created_at: %s\n", feed.CreatedAt)
+	fmt.Printf("updated_at: %s\n", feed.UpdatedAt)
+	fmt.Printf("name: %s\n", feed.Name)
+	fmt.Printf("url: %s\n", feed.Url)
+	fmt.Printf("user_id: %s\n", feed.UserID)
 	return nil
 }
