@@ -42,6 +42,7 @@ func RegisterCommands(cmds *commands) {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
 }
 
 func Run(state *state, cmds *commands) error {
@@ -139,5 +140,16 @@ func handlerUsers(s *state, cmd command) error {
 		}
 	}
 
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+	// fmt.Println(feed.Channel.Title)
+	// fmt.Println(feed.Channel.Description)
+	fmt.Println(feed)
 	return nil
 }
