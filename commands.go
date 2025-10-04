@@ -149,7 +149,6 @@ func handlerAgg(s *state, cmd command) error {
 		return err
 	}
 	fmt.Printf("Collecting feeds every %s\n", time_bw_reqs)
-	fmt.Println("Titles of latest feed:")
 	tick := time.NewTicker(duration)
 	for ; ; <-tick.C {
 		if err := scrapeFeeds(s); err != nil {
@@ -282,6 +281,7 @@ func scrapeFeeds(s *state) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("\nPosts for %s:\n\n", rssFeed.Channel.Title)
 	for _, content := range rssFeed.Channel.Item {
 		fmt.Printf(" * %s\n", content.Title)
 	}

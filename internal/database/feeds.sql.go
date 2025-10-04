@@ -157,7 +157,7 @@ func (q *Queries) GetFeedsWithUsername(ctx context.Context) ([]GetFeedsWithUsern
 }
 
 const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
-SELECT feeds.id, feeds.name, feeds.url FROM feeds ORDER BY last_fetched_at DESC NULLS FIRST LIMIT 1
+SELECT feeds.id, feeds.name, feeds.url FROM feeds ORDER BY last_fetched_at ASC NULLS FIRST LIMIT 1
 `
 
 type GetNextFeedToFetchRow struct {
