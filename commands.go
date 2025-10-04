@@ -228,6 +228,22 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 	return nil
 }
 
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.arguments) < 1 {
+		return errors.New("URL argument not passed. Unfollow command takes a url argument")
+	}
+	url := cmd.arguments[0]
+	ctx := context.Background()
+	feed, err := s.db.GetFeedsByUrl(ctx, url)
+	if err != nil {
+		return err
+	}
+	if err := s.db.DeleteFeedFollowsById(ctx, database.DeleteFeedFollowsByIdParams{UserID: user.ID, FeedID: feed.ID}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func createFeedFollow(s *state, userId uuid.UUID, feedId uuid.UUID, ctx context.Context) (database.CreateFeedFollowRow, error) {
 	timeNow := time.Now()
 	feed_follow, err := s.db.CreateFeedFollow(ctx, database.CreateFeedFollowParams{

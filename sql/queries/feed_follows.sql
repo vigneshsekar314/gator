@@ -8,3 +8,6 @@ VALUES ( $1, $2, $3, $4, $5) RETURNING *)
 SELECT users.name AS user_name, feeds.name AS feed_name  FROM users JOIN feed_follows ON users.id = feed_follows.user_id
 JOIN feeds ON feeds.id = feed_follows.feed_id
 WHERE users.id = $1;
+
+-- name: DeleteFeedFollowsById :exec
+DELETE FROM feed_follows WHERE feed_follows.user_id = $1 AND feed_follows.feed_id = $2;
