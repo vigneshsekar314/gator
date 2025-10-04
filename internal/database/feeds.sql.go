@@ -13,15 +13,14 @@ import (
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
+INSERT INTO feeds (id, created_at, updated_at, name, url)
 VALUES (
   $1,
   $2,
   $3,
   $4,
-  $5,
-  $6
-  ) RETURNING id, created_at, updated_at, name, url, user_id
+  $5
+  ) RETURNING id, created_at, updated_at, name, url
 `
 
 type CreateFeedParams struct {
@@ -30,7 +29,6 @@ type CreateFeedParams struct {
 	UpdatedAt time.Time
 	Name      string
 	Url       string
-	UserID    uuid.UUID
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -40,7 +38,6 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		arg.UpdatedAt,
 		arg.Name,
 		arg.Url,
-		arg.UserID,
 	)
 	var i Feed
 	err := row.Scan(
@@ -49,13 +46,12 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Url,
-		&i.UserID,
 	)
 	return i, err
 }
 
 const getFeeds = `-- name: GetFeeds :many
-SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+SELECT id, created_at, updated_at, name, url FROM feeds
 `
 
 func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
@@ -73,7 +69,6 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
 			&i.UpdatedAt,
 			&i.Name,
 			&i.Url,
-			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -88,8 +83,24 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
 	return items, nil
 }
 
+const getFeedsByUrl = `-- name: GetFeedsByUrl :one
+SELECT feeds.id, feeds.name FROM feeds WHERE feeds.url = $1 LIMIT 1
+`
+
+type GetFeedsByUrlRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+func (q *Queries) GetFeedsByUrl(ctx context.Context, url string) (GetFeedsByUrlRow, error) {
+	row := q.db.QueryRowContext(ctx, getFeedsByUrl, url)
+	var i GetFeedsByUrlRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const getFeedsWithUsername = `-- name: GetFeedsWithUsername :many
-SELECT feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id, users.name AS username FROM feeds JOIN users ON feeds.user_id = users.id
+ SELECT feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, users.name AS username FROM feeds JOIN feed_follows ON feeds.feed_id = feed_follows.id JOIN users ON feed_follows.user_id = users.id
 `
 
 type GetFeedsWithUsernameRow struct {
@@ -98,7 +109,6 @@ type GetFeedsWithUsernameRow struct {
 	UpdatedAt time.Time
 	Name      string
 	Url       string
-	UserID    uuid.UUID
 	Username  string
 }
 
@@ -117,7 +127,6 @@ func (q *Queries) GetFeedsWithUsername(ctx context.Context) ([]GetFeedsWithUsern
 			&i.UpdatedAt,
 			&i.Name,
 			&i.Url,
-			&i.UserID,
 			&i.Username,
 		); err != nil {
 			return nil, err

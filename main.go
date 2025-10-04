@@ -24,7 +24,15 @@ func main() {
 	state := GetNewState(&conf)
 	state.db = dbQueries
 	cmds := GetNewCommands()
-	RegisterCommands(&cmds)
+	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddfeed)
+	cmds.register("feeds", handlerFeeds)
+	cmds.register("follow", handlerFollow)
+	cmds.register("following", handlerFollowing)
 	if err := Run(&state, &cmds); err != nil {
 		log.Fatal(err)
 	}

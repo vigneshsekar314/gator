@@ -37,16 +37,6 @@ func GetNewCommands() commands {
 	}
 }
 
-func RegisterCommands(cmds *commands) {
-	cmds.register("login", handlerLogin)
-	cmds.register("register", handlerRegister)
-	cmds.register("reset", handlerReset)
-	cmds.register("users", handlerUsers)
-	cmds.register("agg", handlerAgg)
-	cmds.register("addfeed", handlerAddfeed)
-	cmds.register("feeds", handlerFeeds)
-}
-
 func Run(state *state, cmds *commands) error {
 	args := os.Args
 	if len(args) < 2 {
@@ -86,7 +76,7 @@ func handlerLogin(s *state, cmd command) error {
 	usrNm := cmd.arguments[0]
 	usr, err := s.db.GetUser(context.Background(), usrNm)
 	if err != nil {
-		return err
+		return fmt.Errorf("user is not registered, register the user first.")
 	}
 	if usr.Name != usrNm {
 		return errors.New("User is not found in the database")
@@ -150,8 +140,6 @@ func handlerAgg(s *state, cmd command) error {
 	if err != nil {
 		return err
 	}
-	// fmt.Println(feed.Channel.Title)
-	// fmt.Println(feed.Channel.Description)
 	fmt.Println(feed)
 	return nil
 }
@@ -160,26 +148,23 @@ func handlerAddfeed(s *state, cmd command) error {
 	if len(cmd.arguments) < 2 {
 		return errors.New("Atleast two Arguments should be present for name and url")
 	}
-	users, err := s.db.GetUsers(context.Background())
+	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
 	if err != nil {
-		return err
-	}
-	var currentUserId uuid.UUID
-	for _, user := range users {
-		if user.Name == s.config.CurrentUserName {
-			currentUserId = user.ID
-			break
-		}
+		return fmt.Errorf("user is not registered, register the user first.")
 	}
 	timeNow := time.Now()
-	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
+	ctx := context.Background()
+	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: timeNow,
 		UpdatedAt: timeNow,
 		Name:      cmd.arguments[0],
 		Url:       cmd.arguments[1],
-		UserID:    currentUserId,
 	})
+	if err != nil {
+		return err
+	}
+	_, err = createFeedFollow(s, user.ID, feed.ID, ctx)
 	if err != nil {
 		return err
 	}
@@ -188,7 +173,7 @@ func handlerAddfeed(s *state, cmd command) error {
 	fmt.Printf("updated_at: %s\n", feed.UpdatedAt)
 	fmt.Printf("name: %s\n", feed.Name)
 	fmt.Printf("url: %s\n", feed.Url)
-	fmt.Printf("user_id: %s\n", feed.UserID)
+	fmt.Printf("user_id: %s\n", user.ID)
 	return nil
 }
 
@@ -201,4 +186,58 @@ func handlerFeeds(s *state, cmd command) error {
 		fmt.Printf("feed name: %s | url: %s | username: %s\n", feed.Name, feed.Url, feed.Username)
 	}
 	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.arguments) < 1 {
+		return errors.New("follow command expects one argument for url")
+	}
+	url := cmd.arguments[0]
+	ctx := context.Background()
+	feeds, err := s.db.GetFeedsByUrl(ctx, url)
+	if err != nil {
+		return fmt.Errorf("Feed does not exists. Add feed url by using addfeed command.")
+	}
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("user is not registered, register the user first.")
+	}
+	feed_follow, err := createFeedFollow(s, user.ID, feeds.ID, ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("ID: %v, CreatedAt: %s, UpdatedAt: %s, UserId: %v, FeedId: %v, Username: %s, Feedname: %s\n", feed_follow.FeedFollowsID, feed_follow.CreatedAt, feed_follow.UpdatedAt, feed_follow.UserID, feed_follow.FeedID, feed_follow.Username, feed_follow.FeedName)
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	ctx := context.Background()
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("user is not registered, register the user first.")
+	}
+	userfeeds, err := s.db.GetFeedFollowsForUser(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Feeds for %s:\n", user.Name)
+	for _, feed := range userfeeds {
+		fmt.Printf(" * %s\n", feed.FeedName)
+	}
+	return nil
+}
+
+func createFeedFollow(s *state, userId uuid.UUID, feedId uuid.UUID, ctx context.Context) (database.CreateFeedFollowRow, error) {
+	timeNow := time.Now()
+	feed_follow, err := s.db.CreateFeedFollow(ctx, database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: timeNow,
+		UpdatedAt: timeNow,
+		UserID:    userId,
+		FeedID:    feedId,
+	})
+	if err != nil {
+		return database.CreateFeedFollowRow{}, err
+	}
+	return feed_follow, nil
 }
