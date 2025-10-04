@@ -148,15 +148,11 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddfeed(s *state, cmd command) error {
+func handlerAddfeed(s *state, cmd command, user database.User) error {
 	if len(cmd.arguments) < 2 {
 		return errors.New("Atleast two Arguments should be present for name and url")
 	}
 	ctx := context.Background()
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("user is not registered, register the user first.")
-	}
 	var feedId uuid.UUID
 	var feedName string
 	var feedNew database.Feed
@@ -186,11 +182,7 @@ func handlerAddfeed(s *state, cmd command) error {
 		return err
 	}
 	fmt.Printf("id: %s\n", feedId)
-	// fmt.Printf("created_at: %s\n", feed.CreatedAt)
-	// fmt.Printf("updated_at: %s\n", feed.UpdatedAt)
 	fmt.Printf("name: %s\n", feedName)
-	// fmt.Printf("url: %s\n", feed.Url)
-	// fmt.Printf("user_id: %s\n", user.ID)
 	return nil
 }
 
@@ -205,7 +197,7 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.arguments) < 1 {
 		return errors.New("follow command expects one argument for url")
 	}
@@ -215,10 +207,6 @@ func handlerFollow(s *state, cmd command) error {
 	if err != nil {
 		return fmt.Errorf("Feed does not exists. Add feed url by using addfeed command.")
 	}
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("user is not registered, register the user first.")
-	}
 	feed_follow, err := createFeedFollow(s, user.ID, feeds.ID, ctx)
 	if err != nil {
 		return err
@@ -227,12 +215,8 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("user is not registered, register the user first.")
-	}
 	userfeeds, err := s.db.GetFeedFollowsForUser(ctx, user.ID)
 	if err != nil {
 		return err
