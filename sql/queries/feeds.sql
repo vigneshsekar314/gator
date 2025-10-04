@@ -16,3 +16,6 @@ SELECT * FROM feeds;
 
 -- name: GetFeedsByUrl :one
 SELECT feeds.id, feeds.name FROM feeds WHERE feeds.url = $1 LIMIT 1;
+
+-- name: DeleteFeeds :exec
+DELETE FROM feeds;

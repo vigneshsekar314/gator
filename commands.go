@@ -111,10 +111,14 @@ func handlerRegister(s *state, cmd command) error {
 }
 
 func handlerReset(s *state, cmd command) error {
-	if err := s.db.DeleteUser(context.Background()); err != nil {
+	ctx := context.Background()
+	if err := s.db.DeleteUser(ctx); err != nil {
 		return err
 	}
-	fmt.Println("All users have been deleted")
+	if err := s.db.DeleteFeeds(ctx); err != nil {
+		return err
+	}
+	fmt.Println("All users and feeds have been deleted")
 	return nil
 }
 
@@ -148,32 +152,45 @@ func handlerAddfeed(s *state, cmd command) error {
 	if len(cmd.arguments) < 2 {
 		return errors.New("Atleast two Arguments should be present for name and url")
 	}
-	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+	ctx := context.Background()
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
 	if err != nil {
 		return fmt.Errorf("user is not registered, register the user first.")
 	}
-	timeNow := time.Now()
-	ctx := context.Background()
-	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
-		ID:        uuid.New(),
-		CreatedAt: timeNow,
-		UpdatedAt: timeNow,
-		Name:      cmd.arguments[0],
-		Url:       cmd.arguments[1],
-	})
+	var feedId uuid.UUID
+	var feedName string
+	var feedNew database.Feed
+	feedExists, err := s.db.GetFeedsByUrl(ctx, cmd.arguments[1])
+	if err != nil { // feed is not available, create a new feed
+		timeNow := time.Now()
+		var err2 error
+		feedNew, err2 = s.db.CreateFeed(ctx, database.CreateFeedParams{
+			ID:        uuid.New(),
+			CreatedAt: timeNow,
+			UpdatedAt: timeNow,
+			Name:      cmd.arguments[0],
+			Url:       cmd.arguments[1],
+		})
+		if err2 != nil {
+			return err
+		}
+		feedId = feedNew.ID
+		feedName = feedNew.Name
+	} else {
+		// feed exists
+		feedId = feedExists.ID
+		feedName = feedExists.Name
+	}
+	_, err = createFeedFollow(s, user.ID, feedId, ctx)
 	if err != nil {
 		return err
 	}
-	_, err = createFeedFollow(s, user.ID, feed.ID, ctx)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("id: %s\n", feed.ID)
-	fmt.Printf("created_at: %s\n", feed.CreatedAt)
-	fmt.Printf("updated_at: %s\n", feed.UpdatedAt)
-	fmt.Printf("name: %s\n", feed.Name)
-	fmt.Printf("url: %s\n", feed.Url)
-	fmt.Printf("user_id: %s\n", user.ID)
+	fmt.Printf("id: %s\n", feedId)
+	// fmt.Printf("created_at: %s\n", feed.CreatedAt)
+	// fmt.Printf("updated_at: %s\n", feed.UpdatedAt)
+	fmt.Printf("name: %s\n", feedName)
+	// fmt.Printf("url: %s\n", feed.Url)
+	// fmt.Printf("user_id: %s\n", user.ID)
 	return nil
 }
 
