@@ -2,13 +2,18 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/vigneshsekar314/gator/internal/config"
 	"github.com/vigneshsekar314/gator/internal/database"
-	"os"
-	"time"
 )
 
 type state struct {
@@ -139,7 +144,7 @@ func handlerUsers(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAgg(s *state, cmd command) error {
+func handlerAgg(s *state, cmd command, user database.User) error {
 	if len(cmd.arguments) < 1 {
 		return errors.New("Argument for time between requests must be provided")
 	}
@@ -253,6 +258,30 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	return nil
 }
 
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	limit := 2
+	if len(cmd.arguments) > 0 {
+		var er error
+		limit, er = strconv.Atoi(cmd.arguments[0])
+		if er != nil {
+			limit = 2
+		}
+	}
+	posts, err := s.db.GetPostForUser(context.Background(), database.GetPostForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Println()
+	for _, content := range posts {
+		fmt.Printf("Title: %s\n", content.Title)
+		fmt.Printf("Description: %s\n\n", content.Description.String)
+	}
+	return nil
+}
+
 func createFeedFollow(s *state, userId uuid.UUID, feedId uuid.UUID, ctx context.Context) (database.CreateFeedFollowRow, error) {
 	timeNow := time.Now()
 	feed_follow, err := s.db.CreateFeedFollow(ctx, database.CreateFeedFollowParams{
@@ -281,9 +310,40 @@ func scrapeFeeds(s *state) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\nPosts for %s:\n\n", rssFeed.Channel.Title)
+	savePosts(s.db, rssFeed, nextFeed.ID)
+	// fmt.Printf("\nPosts for %s:\n\n", rssFeed.Channel.Title)
+	// for _, content := range rssFeed.Channel.Item {
+	// 	fmt.Printf(" * %s\n", content.Title)
+	// }
+	return nil
+}
+
+func savePosts(db *database.Queries, rssFeed *RSSFeed, feedId uuid.UUID) error {
 	for _, content := range rssFeed.Channel.Item {
-		fmt.Printf(" * %s\n", content.Title)
+		timeNow := time.Now()
+		var pubTime sql.NullTime
+		publishedTime, err := time.Parse(time.RFC3339, content.PubDate)
+		if err != nil {
+			// fmt.Printf("time format not supported. ")
+		} else {
+			pubTime = sql.NullTime{Time: publishedTime, Valid: true}
+		}
+
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   timeNow,
+			UpdatedAt:   timeNow,
+			Title:       content.Title,
+			Url:         content.Link,
+			Description: sql.NullString{String: content.Description, Valid: true},
+			PublishedAt: pubTime,
+			FeedID:      feedId,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "error in savePosts: pq: duplicate key value violates unique constraint \"posts_url_key\"") {
+				log.Printf("error in savePosts: %v", err)
+			}
+		}
 	}
 	return nil
 }
