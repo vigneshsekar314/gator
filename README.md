@@ -10,7 +10,7 @@ Gator is a command-line blog aggregator based on RSS (Really Simple Syndication)
 ## Installation
 
 After checking the prerequisites, install gator by running the following command in your terminal: `go install https://github.com/vigneshsekar314/gator`
-Gator uses a configuration file to store the information of the logged in user and postgres connection string (which stores the users, feeds and posts information).
+Gator uses a configuration file to store the information of the logged in user and postgres connection string (postgres SQL DB stores the users, feeds and posts information).
 
 Gator expects the configuration file to be present. Create the configuration file in your home directory with the name: `.gatorconfig.json`
 The configuration file (`.gatorconfig.json`) should have the following json structure:
