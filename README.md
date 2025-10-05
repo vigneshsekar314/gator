@@ -9,10 +9,11 @@ Gator is a command-line blog aggregator based on RSS (Really Simple Syndication)
 
 ## Installation
 
-After checking the prerequisites, install gator by running the following command in your terminal: `go install github.com/vigneshsekar314/gator@latest`
-Gator uses a configuration file to store the information of the logged in user and postgres connection string (postgres SQL DB stores the users, feeds and posts information).
+After checking the prerequisites, install gator by running the following command in your terminal: 
+`go install github.com/vigneshsekar314/gator@latest`
 
-Gator expects the configuration file to be present. Create the configuration file in your home directory with the name: `.gatorconfig.json`
+Gator uses a configuration file to store the information of the logged in user and postgres connection string (postgres SQL DB stores the users, feeds and posts information).
+Gator expects the configuration file to be present in your home directory. Create the configuration file in your home directory with the name: `.gatorconfig.json`
 The configuration file (`.gatorconfig.json`) should have the following json structure:
 
 ```{"db_url":"postgres://[username]:[password]@localhost:5432/gator?sslmode=disable"}```
@@ -74,7 +75,7 @@ Lists down all the feeds that are stored in the database. It shows all feeds sto
 Displays the title of the article and its description. An optional argument [number of articles] limits the number of articles displayed. If [number of articles] is not provided, `browse` command by default, limits the number of articles as 2. 
 
 ### `gator agg [time duration]`
-Aggregates the articles every n duration from different feeds. [time duration specifies] how long Gator waits before fetching feeds. **Do not specify duration for 1 second or less**, as it might cause a denial of service and may get your ip address blocked by the feed provider.
+Aggregates the articles every n duration from different feeds. [time duration] specifies how long Gator waits before fetching feeds. **Do not specify duration for 1 second or less**, as it might cause a denial of service and may get your ip address blocked by the feed provider.
 
 ### `gator reset`
 Deletes all users and feeds from Gator. **This action is permanent and not reversible**. Take caution before executing this command.
