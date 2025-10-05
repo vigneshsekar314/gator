@@ -36,6 +36,7 @@ The following commands are supported:
 6. `gator unfollow [url]`
 7. `gator following`
 8. `gator feeds`
+9. `gator browse [number of articles]`
 9. `gator agg [time duration]`
 
 
