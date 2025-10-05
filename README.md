@@ -1,6 +1,6 @@
 # Gator
 
-Gator is a command-line blog aggregator based on RSS (Really Simple Syndicate) feeds, built as a part of a learning guided project from boot.dev
+Gator is a command-line blog aggregator based on RSS (Really Simple Syndication) feeds, built as a part of a learning guided project from boot.dev
 
 ## Prerequisites (Check these before installing Gator)
 
